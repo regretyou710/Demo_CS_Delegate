@@ -38,7 +38,7 @@ namespace Demo_CS_Delegate
     class Person_MulticastDelegate
     {
         public string Name { get; set; }
-        public Newspaper Newspaper { get; set; }
+        public Newspaper_MulticastDelegete Newspaper { get; set; }
 
         public Person_MulticastDelegate()
         {
@@ -52,37 +52,76 @@ namespace Demo_CS_Delegate
 
 
         //接收報紙
-        public void ReceiveNewspaper(Newspaper newspaper)
+        public void ReceiveNewspaper(Newspaper_MulticastDelegete newspaper)
         {
             this.Newspaper = newspaper;
+        }
+
+
+        //接收報紙(多家報社，想知道是來自哪家報社報紙)
+        public void ReceiveNewspaper2(Object sender, PublisherArgs newspaper)
+        {
+            if (sender is Publisher_MulticastDelegate)
+            {
+                newspaper.Newspaper.PublisherName = (sender as Publisher_MulticastDelegate).Name;
+            }
+
+            if (sender is Publisher_MulticastDelegate2)
+            {
+                newspaper.Newspaper.PublisherName = (sender as Publisher_MulticastDelegate2).Name;
+            }
+            this.Newspaper = newspaper.Newspaper;
         }
 
 
         //閱讀報紙
         public void ReadNewspaper()
         {
-            Console.WriteLine("Person:{0}在讀, 出版社: {1}, 報紙標題: {2}, 報紙內容: {3}", this.Name, this.Newspaper.Name, this.Newspaper.Title, this.Newspaper.Content);
+            Console.WriteLine("Person:{0}在讀, 出版社: {1}, 報紙標題: {2}, 報紙內容: {3}", this.Name, this.Newspaper.PublisherName, this.Newspaper.Title, this.Newspaper.Content);
         }
 
     }
+
+    //將委託的Subscribers(Newspaper_MulticastDelegete newspaper)參數封裝
+    class PublisherArgs : System.EventArgs
+    {
+        public Newspaper_MulticastDelegete Newspaper { get; set; }
+        public PublisherArgs(Newspaper_MulticastDelegete newspaper)
+        {
+            this.Newspaper = newspaper;
+        }
+    }
+
 
     class Publisher_MulticastDelegate
     {
         public string Name { get; set; }
         //自定義委託類型，訂閱者的接收報紙方法與委託簽章相同
-        public delegate void Subscribers(Newspaper newspaper);
+        public delegate void Subscribers(Newspaper_MulticastDelegete newspaper);
         //宣告委託變數
         public Subscribers _Subscribers = null;
+        //(封裝委託)
+        //public event Subscribers _Subscribers = null;
+
+
+        //多家報社
+        //自定義委託類型，訂閱者的接收報紙方法與委託簽章相同
+        //public delegate void Subscribers2(Object sender, Newspaper_MulticastDelegete newspaper);
+        //封裝委託參數
+        public delegate void Subscribers2(Object sender, PublisherArgs newspaper);
+        //宣告委託變數
+        public event Subscribers2 _Subscribers2 = null;
+
+
         public Publisher_MulticastDelegate(string name)
         {
             this.Name = name;
         }
 
-
         //寄送報紙
-        public void SendNewspaper(Newspaper newspaper)
+        public void SendNewspaper(Newspaper_MulticastDelegete newspaper)
         {
-            newspaper.Name = this.Name;
+            newspaper.PublisherName = this.Name;
             //使用委託
             if (_Subscribers != null)
             {
@@ -90,12 +129,12 @@ namespace Demo_CS_Delegate
 
                 //如果在多播委託時產生例外:
                 //將_Subscribers中的調用委託函數列表迭代出來
-                foreach (Subscribers args in _Subscribers.GetInvocationList())
+                foreach (Subscribers hander in _Subscribers.GetInvocationList())
                 {
                     try
                     {
-                        //每一個元素都是Subscribers類型函數，調用arg(參數);
-                        args(newspaper);
+                        //每一個元素都是Subscribers類型函數，調用hander(參數);
+                        hander(newspaper);
                     }
                     catch (Exception ex)
                     {
@@ -103,15 +142,46 @@ namespace Demo_CS_Delegate
                         Console.WriteLine(ex.Message);
                     }
                 }
-                
+
+            }
+
+        }
+
+
+        //寄送報紙(多家報社)
+        public void SendNewspaper2(Newspaper_MulticastDelegete newspaper)
+        {
+            //使用委託
+            if (_Subscribers2 != null)
+            {
+                //_Subscribers(newspaper);
+
+                //如果在多播委託時產生例外:
+                //將_Subscribers中的調用委託函數列表迭代出來
+                foreach (Subscribers2 hander in _Subscribers2.GetInvocationList())
+                {
+                    try
+                    {
+                        //每一個元素都是Subscribers類型函數，調用hander(調用Subscribers2()的當前類,參數);
+                        hander(this, new PublisherArgs(new Newspaper_MulticastDelegete()));
+                    }
+                    catch (Exception ex)
+                    {
+
+                        Console.WriteLine(ex.Message);
+                    }
+                }
+
             }
 
         }
     }
 
+
+
     class Newspaper_MulticastDelegete
     {
-        public string Name { get; set; }
+        public string PublisherName { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
     }
@@ -119,7 +189,7 @@ namespace Demo_CS_Delegate
     class Company_MulticastDelegete
     {
         public string Name { get; set; }
-        public Newspaper Newspaper { get; set; }
+        public Newspaper_MulticastDelegete Newspaper { get; set; }
         public Company_MulticastDelegete()
         {
 
@@ -129,14 +199,78 @@ namespace Demo_CS_Delegate
             this.Name = name;
         }
 
-        public void ReceiveNewspaper(Newspaper newspaper)
+        public void ReceiveNewspaper(Newspaper_MulticastDelegete newspaper)
         {
             this.Newspaper = newspaper;
         }
 
         public void ReadNewspaper()
         {
-            Console.WriteLine("Company:{0}在讀, 出版社: {1}, 報紙標題: {2}, 報紙內容: {3}", this.Name, this.Newspaper.Name, this.Newspaper.Title, this.Newspaper.Content);
+            Console.WriteLine("Company:{0}在讀, 出版社: {1}, 報紙標題: {2}, 報紙內容: {3}", this.Name, this.Newspaper.PublisherName, this.Newspaper.Title, this.Newspaper.Content);
+        }
+
+        //接收報紙(多家報社，想知道是來自哪家報社報紙)
+        public void ReceiveNewspaper2(Object sender, PublisherArgs newspaper)
+        {
+
+            if (sender is Publisher_MulticastDelegate)
+            {
+                newspaper.Newspaper.PublisherName = (sender as Publisher_MulticastDelegate).Name;
+            }
+
+            if (sender is Publisher_MulticastDelegate2)
+            {
+                newspaper.Newspaper.PublisherName = (sender as Publisher_MulticastDelegate2).Name;
+            }
+            this.Newspaper = newspaper.Newspaper;
+
+        }
+    }
+
+    class Publisher_MulticastDelegate2
+    {
+        public string Name { get; set; }
+
+        //多家報社
+        //自定義委託類型，訂閱者的接收報紙方法與委託簽章相同
+        //public delegate void Subscribers2(Object sender, Newspaper_MulticastDelegete newspaper);
+        //封裝委託參數
+        public delegate void Subscribers2(Object sender, PublisherArgs newspaper);
+        //宣告委託變數
+        public event Subscribers2 _Subscribers2 = null;
+
+
+        public Publisher_MulticastDelegate2(string name)
+        {
+            this.Name = name;
+        }
+
+        //寄送報紙(多家報社)
+        public void SendNewspaper2(Newspaper_MulticastDelegete newspaper)
+        {
+            //使用委託
+            if (_Subscribers2 != null)
+            {
+                //_Subscribers(newspaper);
+
+                //如果在多播委託時產生例外:
+                //將_Subscribers中的調用委託函數列表迭代出來
+                foreach (Subscribers2 hander in _Subscribers2.GetInvocationList())
+                {
+                    try
+                    {
+                        //每一個元素都是Subscribers類型函數，調用hander(調用Subscribers2()的當前類,參數);
+                        hander(this, new PublisherArgs(new Newspaper_MulticastDelegete()));
+                    }
+                    catch (Exception ex)
+                    {
+
+                        Console.WriteLine(ex.Message);
+                    }
+                }
+
+            }
+
         }
     }
 }
